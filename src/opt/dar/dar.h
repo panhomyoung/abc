@@ -41,6 +41,7 @@ ABC_NAMESPACE_HEADER_START
 
 typedef struct Dar_RwrPar_t_            Dar_RwrPar_t;
 typedef struct Dar_RefPar_t_            Dar_RefPar_t;
+typedef struct Dar_ResPar_t_            Dar_ResPar_t;
 
 struct Dar_RwrPar_t_  
 {
@@ -66,6 +67,15 @@ struct Dar_RefPar_t_
     int              fUseZeros;      // perform zero-cost replacements
     int              fVerbose;       // verbosity level
     int              fVeryVerbose;   // enables very verbose output
+};
+struct Dar_ResPar_t_ {
+  int nCutsMax;
+  int nNodesMax;
+  int nLevelsOdc;
+  int fUpdateLevel;
+  int fUseZeros;
+  int fVerbose;
+  int fVeryVerbose;
 };
 
 ////////////////////////////////////////////////////////////////////////
