@@ -387,6 +387,10 @@ SOURCE=.\src\base\abci\abcOrder.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\base\abci\abcOrchestration.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\base\abci\abcPart.c
 # End Source File
 # Begin Source File
@@ -672,6 +676,10 @@ SOURCE=.\src\base\io\ioWriteCnf.c
 # Begin Source File
 
 SOURCE=.\src\base\io\ioWriteDot.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\base\io\ioWriteEdgelist.c
 # End Source File
 # Begin Source File
 
@@ -1127,6 +1135,18 @@ SOURCE=.\src\base\wln\wln.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\base\wln\wlnBlast.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\base\wln\wlnCom.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\base\wln\wlnGuide.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\base\wln\wlnMem.c
 # End Source File
 # Begin Source File
@@ -1143,7 +1163,15 @@ SOURCE=.\src\base\wln\wlnObj.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\base\wln\wlnRead.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\base\wln\wlnRetime.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\base\wln\wlnRtl.c
 # End Source File
 # Begin Source File
 
@@ -4903,7 +4931,19 @@ SOURCE=.\src\aig\gia\giaCSat2.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaCSat3.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaCSatOld.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaCSatP.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaCSatP.h
 # End Source File
 # Begin Source File
 
@@ -4912,6 +4952,10 @@ SOURCE=.\src\aig\gia\giaCTas.c
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaCut.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaDecs.c
 # End Source File
 # Begin Source File
 
@@ -5059,7 +5103,23 @@ SOURCE=.\src\aig\gia\giaMini.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaMinLut.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaMinLut2.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaMuxes.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaNewBdd.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaNewTt.h
 # End Source File
 # Begin Source File
 
@@ -5079,6 +5139,10 @@ SOURCE=.\src\aig\gia\giaPat.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaPat2.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaPf.c
 # End Source File
 # Begin Source File
@@ -5087,11 +5151,27 @@ SOURCE=.\src\aig\gia\giaQbf.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaReshape1.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaReshape2.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaResub.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaResub2.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaResub3.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaResub6.c
 # End Source File
 # Begin Source File
 
@@ -5127,6 +5207,10 @@ SOURCE=.\src\aig\gia\giaSatoko.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaSatSyn.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaScl.c
 # End Source File
 # Begin Source File
@@ -5151,19 +5235,15 @@ SOURCE=.\src\aig\gia\giaShrink7.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaSif.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaSim.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaSim2.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\aig\gia\giaSim4.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\aig\gia\giaSim5.c
 # End Source File
 # Begin Source File
 
@@ -5187,6 +5267,10 @@ SOURCE=.\src\aig\gia\giaStg.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaStoch.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaStr.c
 # End Source File
 # Begin Source File
@@ -5196,6 +5280,10 @@ SOURCE=.\src\aig\gia\giaSupMin.c
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaSupp.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaSupps.c
 # End Source File
 # Begin Source File
 
@@ -5224,6 +5312,22 @@ SOURCE=.\src\aig\gia\giaTruth.c
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaTsim.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaTtopt.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaTransduction.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaTransduction.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaTranStoch.c
 # End Source File
 # Begin Source File
 
@@ -5523,6 +5627,10 @@ SOURCE=.\src\proof\cec\cecPat.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\proof\cec\cecProve.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\proof\cec\cecSat.c
 # End Source File
 # Begin Source File
@@ -5532,6 +5640,10 @@ SOURCE=.\src\proof\cec\cecSatG.c
 # Begin Source File
 
 SOURCE=.\src\proof\cec\cecSatG2.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\proof\cec\cecSatG3.c
 # End Source File
 # Begin Source File
 

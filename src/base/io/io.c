@@ -52,6 +52,7 @@ static int IoCommandReadInit    ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadPla     ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadPlaMo   ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadTruth   ( Abc_Frame_t * pAbc, int argc, char **argv );
+static int IoCommandReadCnf     ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadVerilog ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadStatus  ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandReadGig     ( Abc_Frame_t * pAbc, int argc, char **argv );
@@ -65,6 +66,7 @@ static int IoCommandWriteAigerCex( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBaf    ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBblif  ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBlif   ( Abc_Frame_t * pAbc, int argc, char **argv );
+static int IoCommandWriteEdgelist( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBlifMv ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBench  ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteBook   ( Abc_Frame_t * pAbc, int argc, char **argv );
@@ -84,6 +86,7 @@ static int IoCommandWriteTruths ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteStatus ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteSmv    ( Abc_Frame_t * pAbc, int argc, char **argv );
 static int IoCommandWriteJson   ( Abc_Frame_t * pAbc, int argc, char **argv );
+static int IoCommandWriteResub  ( Abc_Frame_t * pAbc, int argc, char **argv );
 
 extern void Abc_FrameCopyLTLDataBase( Abc_Frame_t *pAbc, Abc_Ntk_t * pNtk );
 
@@ -122,6 +125,7 @@ void Io_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "I/O", "read_pla",      IoCommandReadPla,      1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_plamo",    IoCommandReadPlaMo,    1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_truth",    IoCommandReadTruth,    1 );
+    Cmd_CommandAdd( pAbc, "I/O", "read_cnf",      IoCommandReadCnf,      1 );    
     Cmd_CommandAdd( pAbc, "I/O", "read_verilog",  IoCommandReadVerilog,  1 );
     Cmd_CommandAdd( pAbc, "I/O", "read_status",   IoCommandReadStatus,   0 );
     Cmd_CommandAdd( pAbc, "I/O", "&read_gig",     IoCommandReadGig,      0 );
@@ -144,6 +148,7 @@ void Io_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "I/O", "&write_cnf",    IoCommandWriteCnf2,    0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_dot",     IoCommandWriteDot,     0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_eqn",     IoCommandWriteEqn,     0 );
+    Cmd_CommandAdd( pAbc, "I/O", "write_edgelist",IoCommandWriteEdgelist,    0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_gml",     IoCommandWriteGml,     0 );
 //    Cmd_CommandAdd( pAbc, "I/O", "write_list",    IoCommandWriteList,    0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_pla",     IoCommandWritePla,     0 );
@@ -155,6 +160,7 @@ void Io_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "I/O", "write_status",  IoCommandWriteStatus,  0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_smv",     IoCommandWriteSmv,     0 );
     Cmd_CommandAdd( pAbc, "I/O", "write_json",    IoCommandWriteJson,    0 );
+    Cmd_CommandAdd( pAbc, "I/O", "&write_resub",  IoCommandWriteResub,   0 );
 }
 
 /**Function*************************************************************
@@ -272,6 +278,18 @@ int IoCommandRead( Abc_Frame_t * pAbc, int argc, char ** argv )
         return 0;
     }
     // read the file using the corresponding file reader
+    if ( strstr(pFileName, ".") && !strcmp(strstr(pFileName, "."), ".s") ) 
+    {
+        char Command[1000];
+        assert( strlen(pFileName) < 980 );
+        sprintf( Command, "source -x %s", pFileName );
+        if ( Cmd_CommandExecute( pAbc, Command ) )
+        {
+            fprintf( stdout, "Cannot execute command \"%s\".\n", Command );
+            return 1;
+        }
+        return 0;
+    }
     pNtk = Io_Read( pFileName, Io_ReadFileType(pFileName), fCheck, fBarBufs );
     if ( pNtk == NULL )
         return 0;
@@ -1115,7 +1133,7 @@ int IoCommandReadTruth( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     Abc_Ntk_t * pNtk;
     char * pStr = NULL;
-    char * pSopCover;
+    Vec_Ptr_t * vSops;
     int fHex  = 1;
     int fFile = 0;
     int c;
@@ -1142,28 +1160,36 @@ int IoCommandReadTruth( Abc_Frame_t * pAbc, int argc, char ** argv )
         goto usage;
 
     if ( fFile )
+    {
+        FILE * pFile = fopen( argv[globalUtilOptind], "rb" );
+        if ( pFile == NULL )
+        {
+            printf( "The file \"%s\" cannot be found.\n", argv[globalUtilOptind] );
+            return 1;
+        }
+        else 
+            fclose( pFile );
         pStr = Extra_FileReadContents( argv[globalUtilOptind] );
+    }
     else
         pStr = argv[globalUtilOptind];
-    while ( pStr[ strlen(pStr) - 1 ] == '\n' || pStr[ strlen(pStr) - 1 ] == '\r' )
-        pStr[ strlen(pStr) - 1 ] = '\0';
 
     // convert truth table to SOP
     if ( fHex )
-        pSopCover = Abc_SopFromTruthHex(pStr);
+        vSops = Abc_SopFromTruthsHex(pStr);
     else
-        pSopCover = Abc_SopFromTruthBin(pStr);
+        vSops = Abc_SopFromTruthsBin(pStr);
     if ( fFile )
         ABC_FREE( pStr );
-    if ( pSopCover == NULL || pSopCover[0] == 0 )
+    if ( Vec_PtrSize(vSops) == 0 )
     {
-        ABC_FREE( pSopCover );
+        Vec_PtrFreeFree( vSops );
         fprintf( pAbc->Err, "Reading truth table has failed.\n" );
         return 1;
     }
 
-    pNtk = Abc_NtkCreateWithNode( pSopCover );
-    ABC_FREE( pSopCover );
+    pNtk = Abc_NtkCreateWithNodes( vSops );
+    Vec_PtrFreeFree( vSops );
     if ( pNtk == NULL )
     {
         fprintf( pAbc->Err, "Deriving the network has failed.\n" );
@@ -1176,11 +1202,85 @@ int IoCommandReadTruth( Abc_Frame_t * pAbc, int argc, char ** argv )
 
 usage:
     fprintf( pAbc->Err, "usage: read_truth [-xfh] <truth> <file>\n" );
-    fprintf( pAbc->Err, "\t         creates network with node having given truth table\n" );
-    fprintf( pAbc->Err, "\t-x     : toggles between bin and hex representation [default = %s]\n", fHex?  "hex":"bin" );
-    fprintf( pAbc->Err, "\t-f     : toggles reading truth table from file [default = %s]\n",      fFile? "yes": "no" );
+    fprintf( pAbc->Err, "\t         creates network with node(s) having given truth table(s)\n" );
+    fprintf( pAbc->Err, "\t-x     : toggles between bin and hex notation [default = %s]\n", fHex?  "hex":"bin" );
+    fprintf( pAbc->Err, "\t-f     : toggles reading truth table(s) from file [default = %s]\n",      fFile? "yes": "no" );
     fprintf( pAbc->Err, "\t-h     : prints the command summary\n" );
-    fprintf( pAbc->Err, "\ttruth  : truth table with most signficant bit first (e.g. 1000 for AND(a,b))\n" );
+    fprintf( pAbc->Err, "\ttruth  : truth table with most significant bit first (e.g. 1000 for AND(a,b))\n" );
+    fprintf( pAbc->Err, "\tfile   : file name with the truth table\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int IoCommandReadCnf( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern Vec_Ptr_t * Io_FileReadCnf( char * pFileName, int fMulti );
+    FILE * pFile;
+    Abc_Ntk_t * pNtk;
+    Vec_Ptr_t * vSops;
+    int fMulti = 0;
+    int c;
+
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "mh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+            case 'm':
+                fMulti ^= 1;
+                break;            
+            case 'h':
+                goto usage;
+            default:
+                goto usage;
+        }
+    }
+
+    if ( argc != globalUtilOptind + 1 )
+        goto usage;
+
+    pFile = fopen( argv[globalUtilOptind], "rb" );
+    if ( pFile == NULL )
+    {
+        printf( "The file \"%s\" cannot be found.\n", argv[globalUtilOptind] );
+        return 1;
+    }
+    else 
+        fclose( pFile );
+    vSops = Io_FileReadCnf( argv[globalUtilOptind], fMulti );
+    if ( Vec_PtrSize(vSops) == 0 )
+    {
+        Vec_PtrFreeFree( vSops );
+        fprintf( pAbc->Err, "Reading CNF file has failed.\n" );
+        return 1;
+    }
+    pNtk = Abc_NtkCreateWithNodes( vSops );
+    Vec_PtrFreeFree( vSops );
+    if ( pNtk == NULL )
+    {
+        fprintf( pAbc->Err, "Deriving the network has failed.\n" );
+        return 1;
+    }
+    // replace the current network
+    Abc_FrameReplaceCurrentNetwork( pAbc, pNtk );
+    Abc_FrameClearVerifStatus( pAbc );
+    return 0;
+
+usage:
+    fprintf( pAbc->Err, "usage: read_cnf [-mh] <file>\n" );
+    fprintf( pAbc->Err, "\t         creates network with one node\n" );
+    fprintf( pAbc->Err, "\t-m     : toggles generating multi-output network [default = %s]\n", fMulti?  "yes":"no" );    
+    fprintf( pAbc->Err, "\t-h     : prints the command summary\n" );
     fprintf( pAbc->Err, "\tfile   : file name with the truth table\n" );
     return 1;
 }
@@ -1530,7 +1630,7 @@ int IoCommandWrite( Abc_Frame_t * pAbc, int argc, char **argv )
     if ( !strcmp( Extra_FileNameExtension(pFileName), "genlib" )  )
         sprintf( Command, "write_genlib %s", pFileName );
     else if ( !strcmp( Extra_FileNameExtension(pFileName), "lib" ) )
-        sprintf( Command, "write_liberty %s", pFileName );
+        sprintf( Command, "write_lib %s", pFileName );
     else if ( !strcmp( Extra_FileNameExtension(pFileName), "dsd" ) )
         sprintf( Command, "dsd_save %s", pFileName );
     if ( Command[0] )
@@ -2793,6 +2893,69 @@ usage:
   SeeAlso     []
 
 ***********************************************************************/
+int IoCommandWriteEdgelist( Abc_Frame_t * pAbc, int argc, char **argv )
+{
+    char * pFileName;
+    int c, fSpecial = 0;
+
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Nh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+            case 'N':
+                fSpecial ^= 1;
+                break;
+            /*
+            case 'a':
+                fUseHie ^= 1;
+                break;
+            case 'h':
+                goto usage;
+            */
+            default:
+                goto usage;
+        }
+    }
+    if ( pAbc->pNtkCur == NULL )
+    {
+        fprintf( pAbc->Out, "Empty network.\n" );
+        return 0;
+    }
+    if ( argc != globalUtilOptind + 1 )
+        goto usage;
+    // get the output file name
+    pFileName = argv[globalUtilOptind];
+    // call the corresponding file writer
+    if ( fSpecial ) // keep original naming
+        Io_WriteEdgelist( pAbc->pNtkCur, pFileName, 1, 0, 0, fSpecial); //last option is fName
+    else
+        Io_WriteEdgelist( pAbc->pNtkCur, pFileName, 1, 0, 0, fSpecial); //last option is fName
+    return 0;
+
+usage:
+    fprintf( pAbc->Err, "usage: write_edgelist [-N] <file>\n" );
+    fprintf( pAbc->Err, "\t         writes the network into edgelist file\n" );
+    fprintf( pAbc->Err, "\t         part of Verilog-2-PyG (PyTorch Geometric). more details https://github.com/ycunxi/Verilog-to-PyG \n" );
+    fprintf( pAbc->Err, "\t-N     : toggle keeping original naming of the netlist in edgelist (default=False)\n");  
+    fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
+    fprintf( pAbc->Err, "\tfile   : the name of the file to write (extension .el)\n" );
+    return 1;
+}
+
+
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
 int IoCommandWriteGml( Abc_Frame_t * pAbc, int argc, char **argv )
 {
     char * pFileName;
@@ -2982,13 +3145,13 @@ usage:
 ***********************************************************************/
 int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
 {
-    extern void Io_WriteVerilogLut( Abc_Ntk_t * pNtk, char * pFileName, int nLutSize );
+    extern void Io_WriteVerilogLut( Abc_Ntk_t * pNtk, char * pFileName, int nLutSize, int fFixed, int fNoModules );
     char * pFileName;
-    int c, fOnlyAnds = 0;
+    int c, fFixed = 0, fOnlyAnds = 0, fNoModules = 0;
     int nLutSize = -1;
 
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "Kah" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Kfamh" ) ) != EOF )
     {
         switch ( c )
         {
@@ -3003,8 +3166,14 @@ int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
                 if ( nLutSize < 2 || nLutSize > 6 )
                     goto usage;
                 break;
+            case 'f':
+                fFixed ^= 1;
+                break;
             case 'a':
                 fOnlyAnds ^= 1;
+                break;
+            case 'm':
+                fNoModules ^= 1;
                 break;
             case 'h':
                 goto usage;
@@ -3019,6 +3188,8 @@ int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
     }
     if ( argc != globalUtilOptind + 1 )
         goto usage;
+    if ( fFixed )
+        nLutSize = 6;
     // get the output file name
     pFileName = argv[globalUtilOptind];
     // call the corresponding file writer
@@ -3031,16 +3202,18 @@ int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
         Abc_NtkDelete( pNtkTemp );
     }
     else if ( nLutSize >= 2 && nLutSize <= 6 )
-        Io_WriteVerilogLut( pAbc->pNtkCur, pFileName, nLutSize );
+        Io_WriteVerilogLut( pAbc->pNtkCur, pFileName, nLutSize, fFixed, fNoModules );
     else
         Io_Write( pAbc->pNtkCur, pFileName, IO_FILE_VERILOG );
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: write_verilog [-K num] [-ah] <file>\n" );
+    fprintf( pAbc->Err, "usage: write_verilog [-K num] [-famh] <file>\n" );
     fprintf( pAbc->Err, "\t         writes the current network in Verilog format\n" );
     fprintf( pAbc->Err, "\t-K num : write the network using instances of K-LUTs (2 <= K <= 6) [default = not used]\n" );
+    fprintf( pAbc->Err, "\t-f     : toggle using fixed format [default = %s]\n", fFixed? "yes":"no" );
     fprintf( pAbc->Err, "\t-a     : toggle writing expressions with only ANDs (without XORs and MUXes) [default = %s]\n", fOnlyAnds? "yes":"no" );
+    fprintf( pAbc->Err, "\t-m     : toggle writing additional modules [default = %s]\n", !fNoModules? "yes":"no" );
     fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
     fprintf( pAbc->Err, "\tfile   : the name of the file to write\n" );
     return 1;
@@ -3240,19 +3413,23 @@ int IoCommandWriteTruths( Abc_Frame_t * pAbc, int argc, char **argv )
     word * pTruth;
     int nBytes;
     int fReverse = 0;
-    int fBinary = 0;
+    int fHex = 1;
+    int fBinaryFile = 0;
     int c, i;
  
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "rbh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "rxbh" ) ) != EOF )
     {
         switch ( c )
         {
             case 'r':
                 fReverse ^= 1;
                 break;
+            case 'x':
+                fHex ^= 1;
+                break;
             case 'b':
-                fBinary ^= 1;
+                fBinaryFile ^= 1;
                 break;
             case 'h':
                 goto usage;
@@ -3290,19 +3467,22 @@ int IoCommandWriteTruths( Abc_Frame_t * pAbc, int argc, char **argv )
     Gia_ManForEachCo( pAbc->pGia, pObj, i )
     {
         pTruth = Gia_ObjComputeTruthTable( pAbc->pGia, pObj );
-        if ( fBinary )
+        if ( fBinaryFile )
             fwrite( pTruth, nBytes, 1, pFile );
-        else
+        else if ( fHex )
             Extra_PrintHex( pFile, (unsigned *)pTruth, Gia_ManPiNum(pAbc->pGia) ), fprintf( pFile, "\n" );
+        else
+            Extra_PrintBinary( pFile, (unsigned *)pTruth, 1 << Gia_ManPiNum(pAbc->pGia) ), fprintf( pFile, "\n" );
     }
     fclose( pFile );
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: &write_truths [-rbh] <file>\n" );
+    fprintf( pAbc->Err, "usage: &write_truths [-rxbh] <file>\n" );
     fprintf( pAbc->Err, "\t         writes truth tables of each PO of GIA manager into a file\n" );
     fprintf( pAbc->Err, "\t-r     : toggle reversing bits in the truth table [default = %s]\n", fReverse? "yes":"no" );
-    fprintf( pAbc->Err, "\t-b     : toggle using binary format [default = %s]\n", fBinary? "yes":"no" );
+    fprintf( pAbc->Err, "\t-x     : toggle writing in the hex notation [default = %s]\n", fHex? "yes":"no" );
+    fprintf( pAbc->Err, "\t-b     : toggle using binary file format [default = %s]\n", fBinaryFile? "yes":"no" );
     fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
     fprintf( pAbc->Err, "\tfile   : the name of the file to write\n" );
     return 1;
@@ -3450,6 +3630,57 @@ usage:
     fprintf( pAbc->Err, "usage: write_json [-ch] <file>\n" );
     fprintf( pAbc->Err, "\t         write the network in JSON format\n" );
     fprintf( pAbc->Err, "\t-c     : output extracted version\n" );
+    fprintf( pAbc->Err, "\t-h     : print the help message\n" );
+    fprintf( pAbc->Err, "\tfile   : the name of the file to write (extension .json)\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int IoCommandWriteResub( Abc_Frame_t * pAbc, int argc, char **argv )
+{
+    extern void Gia_ManWriteResub( Gia_Man_t * p, char * pFileName );
+    char * pFileName;
+    int c;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "ch" ) ) != EOF )
+    {
+        switch ( c )
+        {
+            case 'h':
+                goto usage;
+            default:
+                goto usage;
+        }
+    }
+    if ( argc != globalUtilOptind + 1 )
+        goto usage;
+    pFileName = argv[globalUtilOptind];
+    if ( pAbc->pGia == NULL )
+    {
+        Abc_Print( -1, "IoCommandWriteResub(): There is no AIG.\n" );
+        return 1;
+    }
+    if ( Gia_ManCiNum(pAbc->pGia) > 20 )
+    {
+        Abc_Print( -1, "IoCommandWriteResub(): The number of inputs is wrong.\n" );
+        return 1;
+    }
+    Gia_ManWriteResub( pAbc->pGia, pFileName );
+    return 0;
+
+usage:
+    fprintf( pAbc->Err, "usage: &write_resub [-ch] <file>\n" );
+    fprintf( pAbc->Err, "\t         write the network in resub format\n" );
     fprintf( pAbc->Err, "\t-h     : print the help message\n" );
     fprintf( pAbc->Err, "\tfile   : the name of the file to write (extension .json)\n" );
     return 1;

@@ -818,7 +818,7 @@ void Glucose_ReadDimacs( char * pFileName, SimpSolver& s )
   SeeAlso     []
 
 ***********************************************************************/
-void Glucose_SolveCnf( char * pFileName, Glucose_Pars * pPars )
+void Glucose_SolveCnf( char * pFileName, Glucose_Pars * pPars, int fDumpCnf )
 {
     abctime clk = Abc_Clock();
 
@@ -842,8 +842,17 @@ void Glucose_SolveCnf( char * pFileName, Glucose_Pars * pPars )
     if ( pPars->pre ) 
     {
         S.eliminate(true);
-        printf( "c Simplication removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
+        printf( "c Simplification removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
         Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
+
+        if ( fDumpCnf )
+        {
+            char * pFileCnf = Extra_FileNameGenericAppend( pFileName, "_out.cnf" );
+            S.toDimacs(pFileCnf);
+            printf( "Finished dumping CNF after preprocessing into file \"%s\".\n", pFileCnf );
+            printf( "SAT solving is not performed.\n" );
+            return;
+        }
     }
 
     vec<Lit> dummy;
@@ -1501,7 +1510,7 @@ int Glucose_SolveAig(Gia_Man_t * p, Glucose_Pars * pPars)
     if (pPars->pre) 
     {
         S.eliminate(true);
-        printf( "c Simplication removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
+        printf( "c Simplification removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
         Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
     }
     

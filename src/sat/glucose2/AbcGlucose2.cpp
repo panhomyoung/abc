@@ -99,15 +99,16 @@ void glucose2_solver_setcallback(Gluco2::SimpSolver* S, void * pman, int(*pfunc)
 
 int glucose2_solver_solve(Gluco2::SimpSolver* S, int * plits, int nlits)
 {
-    vec<Lit> lits;
-    for (int i=0;i<nlits;i++,plits++)
-    {
-        Lit p;
-        p.x = *plits;
-        lits.push(p);
-    }
-    Gluco2::lbool res = S->solveLimited(lits, 0);
-    return (res == l_True ? 1 : res == l_False ? -1 : 0);
+//    vec<Lit> lits;
+//    for (int i=0;i<nlits;i++,plits++)
+//    {
+//        Lit p;
+//        p.x = *plits;
+//        lits.push(p);
+//    }
+//    Gluco2::lbool res = S->solveLimited(lits, 0);
+//    return (res == l_True ? 1 : res == l_False ? -1 : 0);
+    return S->solveLimited(plits, nlits, 0);
 }
 
 int glucose2_solver_addvar(Gluco2::SimpSolver* S)
@@ -131,6 +132,10 @@ void glucose2_solver_setstop(Gluco2::SimpSolver* S, int * pstop)
     S->pstop = pstop;
 }
 
+void glucose2_markapprox( Gluco2::SimpSolver* S, int v0, int v1, int nlim )
+{
+    S->markApprox(v0, v1, nlim);
+}
 
 /**Function*************************************************************
 
@@ -225,6 +230,11 @@ int bmcg2_sat_solver_read_cex_varvalue(bmcg2_sat_solver* s, int ivar)
 void bmcg2_sat_solver_set_stop(bmcg2_sat_solver* s, int * pstop)
 {
     glucose2_solver_setstop((Gluco2::SimpSolver*)s, pstop);
+}
+
+void bmcg2_sat_solver_markapprox(bmcg2_sat_solver* s, int v0, int v1, int nlim)
+{
+    glucose2_markapprox((Gluco2::SimpSolver*)s, v0, v1, nlim);
 }
 
 abctime bmcg2_sat_solver_set_runtime_limit(bmcg2_sat_solver* s, abctime Limit)
@@ -383,6 +393,10 @@ void bmcg2_sat_solver_mark_cone(bmcg2_sat_solver* s, int var)
     ((Gluco2::SimpSolver*)s)->sat_solver_mark_cone(var);
 }
 
+void bmcg2_sat_solver_prelocate( bmcg2_sat_solver * s, int var_num ){
+    ((Gluco2::SimpSolver*)s)->prelocate(var_num);
+}
+
 #else
 
 /**Function*************************************************************
@@ -467,6 +481,11 @@ int glucose2_solver_read_cex_varvalue(Gluco2::Solver* S, int ivar)
 void glucose2_solver_setstop(Gluco2::Solver* S, int * pstop)
 {
     S->pstop = pstop;
+}
+
+void glucose2_markapprox( Gluco2::Solver* S, int v0, int v1, int nlim )
+{
+    S->markApprox(v0, v1, nlim);
 }
 
 
@@ -563,6 +582,11 @@ int bmcg2_sat_solver_read_cex_varvalue(bmcg2_sat_solver* s, int ivar)
 void bmcg2_sat_solver_set_stop(bmcg2_sat_solver* s, int * pstop)
 {
     glucose2_solver_setstop((Gluco2::Solver*)s, pstop);
+}
+
+void bmcg2_sat_solver_markapprox(bmcg2_sat_solver* s, int v0, int v1, int nlim)
+{
+    glucose2_markapprox((Gluco2::Solver*)s, v0, v1, nlim);
 }
 
 abctime bmcg2_sat_solver_set_runtime_limit(bmcg2_sat_solver* s, abctime Limit)
@@ -721,6 +745,10 @@ void bmcg2_sat_solver_mark_cone(bmcg2_sat_solver* s, int var)
     ((Gluco2::Solver*)s)->sat_solver_mark_cone(var);
 }
 
+void bmcg2_sat_solver_prelocate( bmcg2_sat_solver * s, int var_num ){
+    ((Gluco2::Solver*)s)->prelocate(var_num);
+}
+
 #endif
 
 
@@ -841,7 +869,7 @@ void Glucose2_SolveCnf( char * pFileName, Glucose2_Pars * pPars )
     if ( pPars->pre ) 
     {
         S.eliminate(true);
-        printf( "c Simplication removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
+        printf( "c Simplification removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
         Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
     }
 
@@ -1500,7 +1528,7 @@ int Glucose2_SolveAig(Gia_Man_t * p, Glucose2_Pars * pPars)
     if (pPars->pre) 
     {
         S.eliminate(true);
-        printf( "c Simplication removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
+        printf( "c Simplification removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
         Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
     }
     

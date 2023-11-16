@@ -548,10 +548,10 @@ typedef struct buflist {
   struct buflist * next;
 } buflist;
 
-char * Io_MvLoadFileBz2( char * pFileName, int * pnFileSize )
+char * Io_MvLoadFileBz2( char * pFileName, long * pnFileSize )
 {
     FILE    * pFile;
-    int       nFileSize = 0;
+    long       nFileSize = 0;
     char    * pContents;
     BZFILE  * b;
     int       bzError, RetValue;
@@ -628,12 +628,12 @@ char * Io_MvLoadFileBz2( char * pFileName, int * pnFileSize )
   SeeAlso     []
 
 ***********************************************************************/
-static char * Io_MvLoadFileGz( char * pFileName, int * pnFileSize )
+static char * Io_MvLoadFileGz( char * pFileName, long * pnFileSize )
 {
     const int READ_BLOCK_SIZE = 100000;
     gzFile pFile;
     char * pContents;
-    int amtRead, readBlock, nFileSize = READ_BLOCK_SIZE;
+    long amtRead, readBlock, nFileSize = READ_BLOCK_SIZE;
     pFile = gzopen( pFileName, "rb" ); // if pFileName doesn't end in ".gz" then this acts as a passthrough to fopen
     pContents = ABC_ALLOC( char, nFileSize );        
     readBlock = 0;
@@ -665,7 +665,7 @@ static char * Io_MvLoadFileGz( char * pFileName, int * pnFileSize )
 static char * Io_MvLoadFile( char * pFileName )
 {
     FILE * pFile;
-    int nFileSize;
+    long nFileSize;
     char * pContents;
     int RetValue;
     if ( !strncmp(pFileName+strlen(pFileName)-4,".bz2",4) )
@@ -1351,7 +1351,8 @@ static int Io_MvParseLineSubckt( Io_MvMod_t * p, char * pLine )
     Abc_Ntk_t * pModel;
     Abc_Obj_t * pBox, * pNet, * pTerm;
     char * pToken, * pName, * pName2, ** ppNames;
-    int nEquals, Last, i, k;
+    int nEquals, i, k;
+    word Last;
 
     // split the line into tokens
     nEquals = Io_MvCountChars( pLine, '=' );
@@ -1404,9 +1405,9 @@ static int Io_MvParseLineSubckt( Io_MvMod_t * p, char * pLine )
         pName2 = NULL;
         pName = Abc_ObjName(Abc_ObjFanout0(pTerm));
         for ( k = 0; k < nEquals; k++ )
-            if ( !strcmp( ppNames[2*((k+Last)%nEquals)], pName ) )
+            if ( !strcmp( ppNames[2*(int)((k+Last)%nEquals)], pName ) )
             {
-                pName2 = ppNames[2*((k+Last)%nEquals)+1];
+                pName2 = ppNames[2*(int)((k+Last)%nEquals)+1];
                 Last = k+Last+1;
                 break;
             }
@@ -1656,7 +1657,7 @@ static int Io_MvWriteValues( Abc_Obj_t * pNode, Vec_Str_t * vFunc )
 ***********************************************************************/
 static int Io_MvParseLiteralMv( Io_MvMod_t * p, Abc_Obj_t * pNode, char * pToken, Vec_Str_t * vFunc, int iLit )
 {
-    char Buffer[10];
+    char Buffer[16];
     Io_MvVar_t * pVar;
     Abc_Obj_t * pFanin, * pNet;
     char * pCur, * pNext;

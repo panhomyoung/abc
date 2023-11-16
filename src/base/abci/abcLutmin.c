@@ -112,6 +112,7 @@ void Abc_NtkCheckAbsorb( Abc_Ntk_t * pNtk, int nLutSize )
         Counter,  100.0 * Counter  / Abc_NtkNodeNum(pNtk), 
         Counter2, 100.0 * Counter2 / Abc_NtkNodeNum(pNtk) );
     Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
+    Vec_IntFree( vCounts );
 }
 
 /**Function*************************************************************
@@ -610,7 +611,7 @@ Abc_Obj_t * Abc_NtkBddDecompose( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNode, int nLu
     // cofactor w.r.t. the bound set variables
     vCofs = Abc_NtkBddCofactors( dd, (DdNode *)pNode->pData, nLutSize );
     vUniq = Vec_PtrDup( vCofs );
-    Vec_PtrUniqify( vUniq, (int (*)())Vec_PtrSortCompare );
+    Vec_PtrUniqify( vUniq, (int (*)(const void *, const void *))Vec_PtrSortCompare );
     // only perform decomposition with it is support reduring with two less vars
     if( Vec_PtrSize(vUniq) > (1 << (nLutSize-2)) )
     {

@@ -263,7 +263,7 @@ void Wlc_NtkToNdrTest( Wlc_Ntk_t * pNtk )
         ppNames[i] = Wlc_ObjName(pNtk, i);
 
     // verify by writing Verilog
-    Ndr_WriteVerilog( NULL, pDesign, ppNames );
+    Ndr_WriteVerilog( NULL, pDesign, ppNames, 0 );
     Ndr_Write( "test.ndr", pDesign );
 
     // cleanup
@@ -367,8 +367,9 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
 {
     Ndr_Data_t * p = (Ndr_Data_t *)pData;  
     Wlc_Obj_t * pObj; Vec_Int_t * vName2Obj, * vFanins = Vec_IntAlloc( 100 );
-    int Mod = 2, i, k, Obj, * pArray, nDigits, fFound, NameId, NameIdMax;
-    Vec_Wrd_t * vTruths = NULL;
+    int Mod = 2, i, k, Obj, * pArray, fFound, NameId, NameIdMax;
+    unsigned char nDigits;
+    Vec_Wrd_t * vTruths = NULL; int nTruths[2] = {0};
     Wlc_Ntk_t * pTemp, * pNtk = Wlc_NtkAlloc( "top", Ndr_DataObjNum(p, Mod)+1 );
     Wlc_NtkCheckIntegrity( pData );
     Vec_IntClear( &pNtk->vFfs );
@@ -415,11 +416,14 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
             Vec_IntPush( &pNtk->vFfs2, iObj );
         if ( Type == ABC_OPER_LUT )
         {
+            word * pTruth;
             if ( vTruths == NULL )
                 vTruths = Vec_WrdStart( 1000 );
             if ( NameId >= Vec_WrdSize(vTruths) )
                 Vec_WrdFillExtra( vTruths, 2*NameId, 0 );
-            Vec_WrdWriteEntry( vTruths, NameId, *((word *)Ndr_ObjReadBodyP(p, Obj, NDR_FUNCTION)) );
+            pTruth = (word *)Ndr_ObjReadBodyP(p, Obj, NDR_FUNCTION);
+            Vec_WrdWriteEntry( vTruths, NameId, pTruth ? *pTruth : 0 );
+            nTruths[ pTruth != NULL ]++;
         }
         if ( Type == ABC_OPER_SLICE )
             Vec_IntPushTwo( vFanins, End, Beg );
@@ -437,6 +441,8 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
             Wlc_ObjFanin1(pNtk, pObj)->Signed = 1;
         }
     }
+    if ( nTruths[0] )
+        printf( "Warning! The number of LUTs without function is %d (out of %d).\n", nTruths[0], nTruths[0]+nTruths[1] );
     // mark primary outputs
     Ndr_ModForEachPo( p, Mod, Obj )
     {
@@ -483,11 +489,11 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
     Vec_IntFree(vName2Obj);
     // create fake object names
     NameIdMax = Vec_IntFindMax(&pNtk->vNameIds);
-    nDigits = Abc_Base10Log( NameIdMax+1 );
+    nDigits = (unsigned char)Abc_Base10Log( NameIdMax+1 );
     pNtk->pManName = Abc_NamStart( NameIdMax+1, 10 );
     for ( i = 1; i <= NameIdMax; i++ )
     {
-        char pName[20]; sprintf( pName, "s%0*d", nDigits, i );
+        char pName[1000]; sprintf( pName, "s%0*d", nDigits, i );
         NameId = Abc_NamStrFindOrAdd( pNtk->pManName, pName, &fFound );
         assert( !fFound && i == NameId );
     }
@@ -530,12 +536,25 @@ Wlc_Ntk_t * Wlc_NtkFromNdr( void * pData )
   SeeAlso     []
 
 ***********************************************************************/
+void Ndr_DumpNdr( void * pDesign )
+{
+    int i;
+    char ** pNames = ABC_CALLOC( char *, 10000 );
+    for ( i = 0; i < 10000; i++ )
+    {
+        char Buffer[100];
+        sprintf( Buffer, "s%d", i );
+        pNames[i] = Abc_UtilStrsav( Buffer );
+    }
+    Ndr_WriteVerilog( "temp.v", pDesign, pNames, 0 );
+}
 Wlc_Ntk_t * Wlc_ReadNdr( char * pFileName )
 {
     void * pData = Ndr_Read( pFileName );
     Wlc_Ntk_t * pNtk = Wlc_NtkFromNdr( pData );
+    //Ndr_DumpNdr( pData );
     //char * ppNames[10] = { NULL, "a", "b", "c", "d", "e", "f", "g", "h", "i" };
-    //Ndr_WriteVerilog( NULL, pData, ppNames );
+    //Ndr_WriteVerilog( NULL, pData, ppNames, 0 );
     //Ndr_Delete( pData );
     Abc_FrameInputNdr( Abc_FrameGetGlobalFrame(), pData );
     return pNtk;

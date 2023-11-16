@@ -73,7 +73,7 @@ Gia_Man_t * Gia_ManDeepSynOne( int nNoImpr, int TimeOut, int nAnds, int Seed, in
         else if ( fCom == 0 )
             pComp = "; &dc2";
         sprintf( Command, "&dch%s; &if -a -K %d; &mfs -e -W 20 -L 20%s%s",
-            fDch ? " -f" : "", KLut, fFx ? "; &fx" : "", pComp );
+            fDch ? " -f" : "", KLut, fFx ? "; &fx; &st" : "", pComp );
         if ( Abc_FrameIsBatchMode() )
         {
             if ( Cmd_CommandExecute(Abc_FrameGetGlobalFrame(), Command) )
@@ -120,6 +120,7 @@ Gia_Man_t * Gia_ManDeepSynOne( int nNoImpr, int TimeOut, int nAnds, int Seed, in
         }
         if ( nTimeToStop && Abc_Clock() > nTimeToStop )
         {
+            if ( !Abc_FrameIsBatchMode() )
             printf( "Runtime limit (%d sec) is reached after %d iterations.\n", TimeOut, i );
             break;
         }

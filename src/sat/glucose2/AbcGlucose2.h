@@ -86,6 +86,7 @@ extern int               bmcg2_sat_solver_elim_varnum(bmcg2_sat_solver* s);
 extern int *             bmcg2_sat_solver_read_cex( bmcg2_sat_solver* s );
 extern int               bmcg2_sat_solver_read_cex_varvalue( bmcg2_sat_solver* s, int );
 extern void              bmcg2_sat_solver_set_stop( bmcg2_sat_solver* s, int * pstop );
+extern void              bmcg2_sat_solver_markapprox(bmcg2_sat_solver* s, int v0, int v1, int nlim);
 extern abctime           bmcg2_sat_solver_set_runtime_limit( bmcg2_sat_solver* s, abctime Limit );
 extern void              bmcg2_sat_solver_set_conflict_budget( bmcg2_sat_solver* s, int Limit );
 extern int               bmcg2_sat_solver_varnum( bmcg2_sat_solver* s );
@@ -103,6 +104,7 @@ extern void              bmcg2_sat_solver_set_jftr( bmcg2_sat_solver * s, int jf
 extern void              bmcg2_sat_solver_set_var_fanin_lit( bmcg2_sat_solver * s, int var, int lit0, int lit1 );
 extern void              bmcg2_sat_solver_start_new_round( bmcg2_sat_solver * s );
 extern void              bmcg2_sat_solver_mark_cone( bmcg2_sat_solver * s, int var );
+extern void              bmcg2_sat_solver_prelocate( bmcg2_sat_solver * s, int var_num );
 
 extern void              Glucose2_SolveCnf( char * pFilename, Glucose2_Pars * pPars );
 extern int               Glucose2_SolveAig( Gia_Man_t * p, Glucose2_Pars * pPars );

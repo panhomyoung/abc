@@ -85,7 +85,7 @@ class Heap {
 
     void decrease  (int n) { assert(inHeap(n)); percolateUp  (indices[n]); }
     void increase  (int n) { assert(inHeap(n)); percolateDown(indices[n]); }
-
+    void prelocate (int ext_cap){ indices.prelocate(ext_cap); }
 
     // Safe variant of insert/decrease/increase:
     void update(int n)
@@ -142,6 +142,15 @@ class Heap {
         for (i = 0; i < heap.size(); i++)
             indices[heap[i]] = -1;
         heap.clear(dealloc); 
+    }
+    void clear_(bool dealloc = false) 
+    { 
+        int i;
+        for (i = 0; i < heap.size(); i++)
+            indices[heap[i]] = -1;
+
+        if( ! dealloc ) heap.shrink_( heap.size() );
+        else            heap.clear(true); 
     }
 };
 
