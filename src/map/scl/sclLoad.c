@@ -105,6 +105,68 @@ void Abc_SclAddWireLoad( SC_Man * p, Abc_Obj_t * pObj, int fSubtr )
     Abc_SclObjLoad(p, pObj)->rise += fSubtr ? -Load : Load;
     Abc_SclObjLoad(p, pObj)->fall += fSubtr ? -Load : Load;
 }
+float Abc_SclFindWireLoadCellPlace(Abc_Ntk_t* pNtk, Abc_Obj_t* pObj, int iOut,
+                               SC_WireLoad* pWL) {
+  int input_size = Abc_NtkPiNum(pNtk);
+  int output_size = Abc_NtkPoNum(pNtk);
+  int cell_size = Abc_NtkNodeNum(pNtk);
+  float cap = pWL->cap;
+  int x1, x2, y1, y2;
+  x1 = Vec_IntEntry(pNtk->vPlace[pObj->Id - output_size - 1], 0);
+  y1 = Vec_IntEntry(pNtk->vPlace[pObj->Id - output_size - 1], 1);
+  if (iOut <= input_size + output_size){
+    x2 = Vec_IntEntry(pNtk->vPlace[iOut + cell_size - 1], 0);
+    y2 = Vec_IntEntry(pNtk->vPlace[iOut + cell_size - 1], 1);
+  } else {
+    x2 = Vec_IntEntry(pNtk->vPlace[iOut - output_size - 1], 0);
+    y2 = Vec_IntEntry(pNtk->vPlace[iOut - output_size - 1], 1);
+  }
+  float Hpwl = abs(x2 - x1) + abs(y2 - y1);
+  return cap * Hpwl;
+}
+float Abc_SclFindWireLoadFaninPlace(Abc_Ntk_t* pNtk, Abc_Obj_t* pObj, int iOut,
+                                   SC_WireLoad* pWL) {
+  int input_size = Abc_NtkPiNum(pNtk);
+  int output_size = Abc_NtkPoNum(pNtk);
+  int cell_size = Abc_NtkNodeNum(pNtk);
+  float cap = pWL->cap;
+  int x1, x2, y1, y2;
+  x1 = Vec_IntEntry(pNtk->vPlace[pObj->Id - 1], 0);
+  y1 = Vec_IntEntry(pNtk->vPlace[pObj->Id - 1], 1);
+  if (iOut <= input_size + output_size) {
+    x2 = Vec_IntEntry(pNtk->vPlace[iOut + cell_size - 1], 0);
+    y2 = Vec_IntEntry(pNtk->vPlace[iOut + cell_size - 1], 1);
+  } else {
+    x2 = Vec_IntEntry(pNtk->vPlace[iOut - output_size - 1], 0);
+    y2 = Vec_IntEntry(pNtk->vPlace[iOut - output_size - 1], 1);
+  }
+  float Hpwl = abs(x2 - x1) + abs(y2 - y1);
+  return cap * Hpwl;
+}
+void Abc_SclAddWireLoadCellPlace(SC_Man* p, Abc_Obj_t* pObj, Vec_Int_t* FanoutIds) {
+  float Load_max = 0.0;
+  int iOut, k;
+  Vec_IntForEachEntry(FanoutIds, iOut, k) {
+    float Load =
+        Abc_SclFindWireLoadCellPlace(p->pNtk, pObj, iOut, p->pWLoadUsed);
+    if (Load > Load_max) Load_max = Load;
+  }
+  Abc_SclObjLoad(p, pObj)->rise += Load_max;
+  Abc_SclObjLoad(p, pObj)->fall += Load_max;
+}
+void Abc_SclAddWireLoadFaninPlace(SC_Man* p, Abc_Obj_t* pObj,
+                                 Vec_Int_t* FanoutIds) {
+  float Load_max = 0.0;
+  int iOut, k;
+  Vec_IntForEachEntry(FanoutIds, iOut, k) {
+    float Load =
+        Abc_SclFindWireLoadFaninPlace(p->pNtk, pObj, iOut, p->pWLoadUsed);
+    if (Load > Load_max) Load_max = Load;
+  }
+  Abc_SclObjLoad(p, pObj)->rise += Load_max;
+  Abc_SclObjLoad(p, pObj)->fall += Load_max;
+}
+
 void Abc_SclComputeLoad( SC_Man * p )
 {
     Abc_Obj_t * pObj, * pFanin;
@@ -145,6 +207,95 @@ void Abc_SclComputeLoad( SC_Man * p )
             Abc_SclAddWireLoad( p, pObj, 0 );
         Abc_NtkForEachPi( p->pNtk, pObj, i )
             Abc_SclAddWireLoad( p, pObj, 0 );
+    }
+    // check input loads
+    if ( p->vInDrive != NULL )
+    {
+        Abc_NtkForEachPi( p->pNtk, pObj, i )
+        {
+            SC_Pair * pLoad = Abc_SclObjLoad( p, pObj );
+            if ( Abc_SclObjInDrive(p, pObj) != 0 && (pLoad->rise > Abc_SclObjInDrive(p, pObj) || pLoad->fall > Abc_SclObjInDrive(p, pObj)) )
+                printf( "Maximum input drive strength is exceeded at primary input %d.\n", i );
+        }
+    }
+/*
+    // transfer load from barbufs
+    Abc_NtkForEachBarBuf( p->pNtk, pObj, i )
+    {
+        SC_Pair * pLoad = Abc_SclObjLoad( p, pObj );
+        SC_Pair * pLoadF = Abc_SclObjLoad( p, Abc_ObjFanin(pObj, 0) );
+        SC_PairAdd( pLoadF, pLoad );
+    }
+*/
+    // calculate average load
+//    if ( p->EstLoadMax )
+    {
+        double TotalLoad = 0;
+        int nObjs = 0;
+        Abc_NtkForEachNode1( p->pNtk, pObj, i )
+        {
+            SC_Pair * pLoad = Abc_SclObjLoad( p, pObj );
+            TotalLoad += 0.5 * pLoad->fall + 0.5 * pLoad->rise;
+            nObjs++;
+        }
+        Abc_NtkForEachPi( p->pNtk, pObj, i )
+        {
+            SC_Pair * pLoad = Abc_SclObjLoad( p, pObj );
+            TotalLoad += 0.5 * pLoad->fall + 0.5 * pLoad->rise;
+            nObjs++;
+        }
+        p->EstLoadAve = (float)(TotalLoad / nObjs);
+//        printf( "Average load = %.2f\n", p->EstLoadAve );
+    }
+}
+
+void Abc_SclComputeLoadNew( SC_Man * p )
+{
+    Abc_Obj_t * pObj, * pFanin;
+    int i, k;
+    // clear load storage
+    Abc_NtkForEachObj( p->pNtk, pObj, i )
+    {
+        SC_Pair * pLoad = Abc_SclObjLoad( p, pObj );
+        if ( !Abc_ObjIsPo(pObj) )
+            pLoad->rise = pLoad->fall = 0.0;
+    }
+    // add cell load
+    Abc_NtkForEachNode1( p->pNtk, pObj, i )
+    {
+        SC_Cell * pCell = Abc_SclObjCell( pObj );
+        Abc_ObjForEachFanin( pObj, pFanin, k )
+        {
+            SC_Pair * pLoad = Abc_SclObjLoad( p, pFanin );
+            SC_Pin * pPin = SC_CellPin( pCell, k );
+            pLoad->rise += pPin->rise_cap;
+            pLoad->fall += pPin->fall_cap;
+        }
+    }
+    // add PO load
+    Abc_NtkForEachCo( p->pNtk, pObj, i )
+    {
+        SC_Pair * pLoadPo = Abc_SclObjLoad( p, pObj );
+        SC_Pair * pLoad = Abc_SclObjLoad( p, Abc_ObjFanin0(pObj) );
+        pLoad->rise += pLoadPo->rise;
+        pLoad->fall += pLoadPo->fall;
+    }
+    // add wire load
+    if (p->pWLoadUsed != NULL) {
+      Abc_NtkForEachNode1(p->pNtk, pObj, i) {
+        Vec_Int_t* FanoutIds;
+        FanoutIds = Vec_IntAlloc(pObj->vFanouts.nSize);
+        for (int i = 0; i < pObj->vFanouts.nSize; i++)
+          Vec_IntPush(FanoutIds, Abc_ObjFanout(pObj, i)->Id);
+        Abc_SclAddWireLoadCellPlace(p, pObj, FanoutIds);
+      }
+      Abc_NtkForEachPi(p->pNtk, pObj, i) {
+        Vec_Int_t* FanoutIds;
+        FanoutIds = Vec_IntAlloc(pObj->vFanouts.nSize);
+        for (int i = 0; i < pObj->vFanouts.nSize; i++)
+          Vec_IntPush(FanoutIds, Abc_ObjFanout(pObj, i)->Id);
+        Abc_SclAddWireLoadFaninPlace(p, pObj, FanoutIds);
+      }
     }
     // check input loads
     if ( p->vInDrive != NULL )

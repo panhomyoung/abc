@@ -557,7 +557,10 @@ extern void          Abc_SclDnsizePerform( SC_Lib * pLib, Abc_Ntk_t * pNtk, SC_S
 extern Vec_Flt_t *   Abc_SclFindWireCaps( SC_WireLoad * pWL, int nFanoutMax );
 extern float         Abc_SclFindWireLoad( Vec_Flt_t * vWireCaps, int nFans );
 extern void          Abc_SclAddWireLoad( SC_Man * p, Abc_Obj_t * pObj, int fSubtr );
+extern float         Abc_SclFindWireLoadPlace( Vec_Flt_t * vWireCaps, int nFans );
+extern void          Abc_SclAddWireLoadPlace( SC_Man * p, Abc_Obj_t * pObj, int fSubtr );
 extern void          Abc_SclComputeLoad( SC_Man * p );
+extern void          Abc_SclComputeLoadNew( SC_Man * p );
 extern void          Abc_SclUpdateLoad( SC_Man * p, Abc_Obj_t * pObj, SC_Cell * pOld, SC_Cell * pNew );
 extern void          Abc_SclUpdateLoadSplit( SC_Man * p, Abc_Obj_t * pBuffer, Abc_Obj_t * pFanout );
 /*=== sclSize.c ===============================================================*/
@@ -567,10 +570,13 @@ extern void          Abc_SclTimeNtkPrint( SC_Man * p, int fShowAll, int fPrintPa
 extern SC_Man *      Abc_SclManStart( SC_Lib * pLib, Abc_Ntk_t * pNtk, int fUseWireLoads, int fDept, float DUser, int nTreeCRatio );
 extern void          Abc_SclTimeCone( SC_Man * p, Vec_Int_t * vCone );
 extern void          Abc_SclTimeNtkRecompute( SC_Man * p, float * pArea, float * pDelay, int fReverse, float DUser );
+extern void          Abc_SclTimeNtkRecomputeNew( SC_Man * p, float * pArea, float * pDelay, int fReverse, float DUser );
 extern int           Abc_SclTimeIncUpdate( SC_Man * p );
 extern void          Abc_SclTimeIncInsert( SC_Man * p, Abc_Obj_t * pObj );
 extern void          Abc_SclTimeIncUpdateLevel( Abc_Obj_t * pObj );
 extern void          Abc_SclTimePerform( SC_Lib * pLib, Abc_Ntk_t * pNtk, int nTreeCRatio, int fUseWireLoads, int fShowAll, int fPrintPath, int fDumpStats );
+extern void          Abc_SclTimePerformdelay( SC_Lib * pLib, Abc_Ntk_t * pNtk, int nTreeCRatio, int fUseWireLoads, int fShowAll, int fPrintPath, int fDumpStats, double &maxDelay, double &area );
+extern void          Abc_SclTimePerformdelayNew( SC_Lib * pLib, Abc_Ntk_t * pNtk, int nTreeCRatio, int fUseWireLoads, int fShowAll, int fPrintPath, int fDumpStats, double &maxDelay, double &area );
 extern void          Abc_SclPrintBuffers( SC_Lib * pLib, Abc_Ntk_t * pNtk, int fVerbose );
 /*=== sclUpsize.c ===============================================================*/
 extern int           Abc_SclCountNearCriticalNodes( SC_Man * p );
