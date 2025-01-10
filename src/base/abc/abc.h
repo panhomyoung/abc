@@ -215,6 +215,7 @@ struct Abc_Ntk_t_
     Vec_Int_t *       vNameIds;      // name IDs
     Vec_Int_t *       vFins;         // obj/type info
     Vec_Int_t *       vOrigNodeIds;  // original node IDs
+    Vec_Int_t **      vPlace;        // placed cell position
 };
 
 struct Abc_Des_t_ 
