@@ -109,6 +109,7 @@ extern void              Mio_UpdateGenlib( Mio_Library_t * pLib );
 extern int               Mio_UpdateGenlib2( Vec_Str_t * vStr, Vec_Str_t * vStr2, char * pFileName, int fVerbose );
 /*=== mioApi.c =============================================================*/
 extern char *            Mio_LibraryReadName       ( Mio_Library_t * pLib );
+extern char *            Mio_LibraryReadFileName   ( Mio_Library_t * pLib );
 extern int               Mio_LibraryReadGateNum    ( Mio_Library_t * pLib );
 extern Mio_Gate_t *      Mio_LibraryReadGates      ( Mio_Library_t * pLib );
 extern Mio_Gate_t **     Mio_LibraryReadGateArray  ( Mio_Library_t * pLib );
@@ -178,7 +179,7 @@ extern double            Mio_PinReadDelayBlockMax  ( Mio_Pin_t * pPin );
 extern Mio_Pin_t *       Mio_PinReadNext           ( Mio_Pin_t * pPin );  
 /*=== mioRead.c =============================================================*/
 extern char *            Mio_ReadFile( char * FileName, int fAddEnd );
-extern Mio_Library_t *   Mio_LibraryRead( char * FileName, char * pBuffer, char * ExcludeFile, int fVerbose );
+extern Mio_Library_t *   Mio_LibraryRead( char * FileName, char * pBuffer, char * ExcludeFile, int nFaninLimit, int fVerbose );
 extern int               Mio_LibraryReadExclude( char * ExcludeFile, st__table * tExcludeGate );
 /*=== mioFunc.c =============================================================*/
 extern int               Mio_LibraryParseFormulas( Mio_Library_t * pLib );

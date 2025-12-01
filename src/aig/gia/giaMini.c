@@ -555,6 +555,24 @@ char * Abc_FrameGiaOutputMiniLutAttr( Abc_Frame_t * pAbc, void * pMiniLut )
         printf( "Current network in ABC framework is not defined.\n" );
     return Gia_ManToMiniLutAttr( pGia, pMiniLut );
 }
+int * Abc_FrameGiaOutputMiniLutObj( Abc_Frame_t * pAbc )
+{
+    int * pRes = NULL;
+    if ( pAbc == NULL )
+        printf( "ABC framework is not initialized by calling Abc_Start()\n" );
+    pAbc->vMiniLutObjs = Gia_ManDeriveBoxMapping( Abc_FrameReadGia( pAbc ) );
+    if ( pAbc->vMiniLutObjs == NULL )
+        printf( "MiniLut objects are not defined.\n" );
+    pRes = Vec_IntReleaseArray( pAbc->vMiniLutObjs );
+    Vec_IntFreeP( &pAbc->vMiniLutObjs );    
+    return pRes;
+}
+void Abc_FrameSetObjDelays( Abc_Frame_t * pAbc, int * pDelays, int nDelays )
+{
+    Vec_IntFreeP( &pAbc->vObjDelays );
+    pAbc->vObjDelays = Vec_IntAllocArrayCopy( pDelays, nDelays );
+}
+
 
 /**Function*************************************************************
 
@@ -717,6 +735,23 @@ int * Abc_FrameReadMiniLutSwitching( Abc_Frame_t * pAbc )
         return NULL;
     }
     vSwitching = Gia_ManComputeSwitchProbs( pAbc->pGiaMiniLut, 48, 16, 0 );
+    pRes = ABC_CALLOC( int, Vec_IntSize(pAbc->vCopyMiniLut) );
+    Vec_IntForEachEntry( pAbc->vCopyMiniLut, iObj, i )
+        if ( iObj >= 0 )
+            pRes[i] = (int)(10000*Vec_FltEntry( (Vec_Flt_t *)vSwitching, Abc_Lit2Var(iObj) ));
+    Vec_IntFree( vSwitching );
+    return pRes;
+}
+int * Abc_FrameReadMiniLutSwitching2( Abc_Frame_t * pAbc, int fRandPiFactor )
+{
+    Vec_Int_t * vSwitching;
+    int i, iObj, * pRes = NULL;
+    if ( pAbc->pGiaMiniLut == NULL )
+    {
+        printf( "GIA derived from MiniLut is not available.\n" );
+        return NULL;
+    }
+    vSwitching = Gia_ManComputeSwitchProbs2( pAbc->pGiaMiniLut, 48, 16, 0, fRandPiFactor );
     pRes = ABC_CALLOC( int, Vec_IntSize(pAbc->vCopyMiniLut) );
     Vec_IntForEachEntry( pAbc->vCopyMiniLut, iObj, i )
         if ( iObj >= 0 )

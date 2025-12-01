@@ -39,6 +39,11 @@
 #include "kitty_operators.hpp"
 #include "kitty_static_tt.hpp"
 
+#ifdef _MSC_VER
+#  include <intrin.h>
+#  define __builtin_popcount __popcnt
+#endif
+
 ABC_NAMESPACE_CXX_HEADER_START
 
 namespace acd
@@ -605,7 +610,7 @@ private:
                                             : cost <= 32  ? 4
                                                           : 5;
 
-      if ( ss_vars_needed + free_set_size < 6 )
+      if ( ss_vars_needed + free_set_size < ps.lut_size )
       {
         /* look for a shared variable */
         best_multiplicity = cost;
@@ -660,7 +665,7 @@ private:
                                             : cost <= 32  ? 4
                                                           : 5;
 
-      if ( ss_vars_needed + free_set_size < 6 )
+      if ( ss_vars_needed + free_set_size < ps.lut_size )
       {
         /* look for a shared variable */
         best_multiplicity = cost;

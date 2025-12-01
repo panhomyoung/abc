@@ -65,6 +65,8 @@ struct Vec_Int_t_
     for ( i = Start; (i >= 0) && (((pEntry) = Vec_IntEntry(vVec, i)), 1); i-- )
 #define Vec_IntForEachEntryTwo( vVec1, vVec2, Entry1, Entry2, i )                           \
     for ( i = 0; (i < Vec_IntSize(vVec1)) && (((Entry1) = Vec_IntEntry(vVec1, i)), 1) && (((Entry2) = Vec_IntEntry(vVec2, i)), 1); i++ )
+#define Vec_IntForEachEntryThree( vVec1, vVec2, vVec3, Entry1, Entry2, Entry3, i )          \
+    for ( i = 0; (i < Vec_IntSize(vVec1)) && (((Entry1) = Vec_IntEntry(vVec1, i)), 1) && (((Entry2) = Vec_IntEntry(vVec2, i)), 1) && (((Entry3) = Vec_IntEntry(vVec3, i)), 1); i++ )
 #define Vec_IntForEachEntryTwoStart( vVec1, vVec2, Entry1, Entry2, i, Start )               \
     for ( i = Start; (i < Vec_IntSize(vVec1)) && (((Entry1) = Vec_IntEntry(vVec1, i)), 1) && (((Entry2) = Vec_IntEntry(vVec2, i)), 1); i++ )
 #define Vec_IntForEachEntryDouble( vVec, Entry1, Entry2, i )                                \
@@ -550,6 +552,7 @@ static inline void Vec_IntGrow( Vec_Int_t * p, int nCapMin )
 {
     if ( p->nCap >= nCapMin )
         return;
+    assert( p->nCap < ABC_INT_MAX );
     p->pArray = ABC_REALLOC( int, p->pArray, nCapMin ); 
     assert( p->pArray );
     p->nCap   = nCapMin;
@@ -631,7 +634,7 @@ static inline void Vec_IntFillExtra( Vec_Int_t * p, int nSize, int Fill )
     if ( nSize > 2 * p->nCap )
         Vec_IntGrow( p, nSize );
     else if ( nSize > p->nCap )
-        Vec_IntGrow( p, 2 * p->nCap );
+        Vec_IntGrow( p, p->nCap < ABC_INT_MAX/2 ? 2 * p->nCap : ABC_INT_MAX );
     for ( i = p->nSize; i < nSize; i++ )
         p->pArray[i] = Fill;
     p->nSize = nSize;
@@ -749,7 +752,7 @@ static inline void Vec_IntPush( Vec_Int_t * p, int Entry )
         if ( p->nCap < 16 )
             Vec_IntGrow( p, 16 );
         else
-            Vec_IntGrow( p, 2 * p->nCap );
+            Vec_IntGrow( p, p->nCap < ABC_INT_MAX/2 ? 2 * p->nCap : ABC_INT_MAX );
     }
     p->pArray[p->nSize++] = Entry;
 }
@@ -808,7 +811,7 @@ static inline void Vec_IntPushFirst( Vec_Int_t * p, int Entry )
         if ( p->nCap < 16 )
             Vec_IntGrow( p, 16 );
         else
-            Vec_IntGrow( p, 2 * p->nCap );
+            Vec_IntGrow( p, p->nCap < ABC_INT_MAX/2 ? 2 * p->nCap : ABC_INT_MAX );
     }
     p->nSize++;
     for ( i = p->nSize - 1; i >= 1; i-- )
@@ -835,7 +838,7 @@ static inline void Vec_IntPushOrder( Vec_Int_t * p, int Entry )
         if ( p->nCap < 16 )
             Vec_IntGrow( p, 16 );
         else
-            Vec_IntGrow( p, 2 * p->nCap );
+            Vec_IntGrow( p, p->nCap < ABC_INT_MAX/2 ? 2 * p->nCap : ABC_INT_MAX );
     }
     p->nSize++;
     for ( i = p->nSize-2; i >= 0; i-- )
@@ -853,7 +856,7 @@ static inline void Vec_IntPushOrderCost( Vec_Int_t * p, int Entry, Vec_Int_t * v
         if ( p->nCap < 16 )
             Vec_IntGrow( p, 16 );
         else
-            Vec_IntGrow( p, 2 * p->nCap );
+            Vec_IntGrow( p, p->nCap < ABC_INT_MAX/2 ? 2 * p->nCap : ABC_INT_MAX );
     }
     p->nSize++;
     for ( i = p->nSize-2; i >= 0; i-- )
@@ -929,7 +932,7 @@ static inline void Vec_IntPushOrderReverse( Vec_Int_t * p, int Entry )
         if ( p->nCap < 16 )
             Vec_IntGrow( p, 16 );
         else
-            Vec_IntGrow( p, 2 * p->nCap );
+            Vec_IntGrow( p, p->nCap < ABC_INT_MAX/2 ? 2 * p->nCap : ABC_INT_MAX );
     }
     p->nSize++;
     for ( i = p->nSize-2; i >= 0; i-- )
@@ -1274,6 +1277,16 @@ static inline Vec_Int_t * Vec_IntInvert( Vec_Int_t * p, int Fill )
         if ( Entry != Fill )
             Vec_IntWriteEntry( vRes, Entry, i );
     return vRes;
+}
+static inline Vec_Int_t * Vec_IntInvertSize( Vec_Int_t * p, int Size, int Fill ) 
+{
+    Vec_Int_t * vMap = Vec_IntAlloc( 0 );
+    Vec_IntFill( vMap, Size, Fill );
+    int i, k;
+    Vec_IntForEachEntry( p, i, k )
+        if ( i != Fill )
+            Vec_IntWriteEntry( vMap, i, k );
+    return vMap;
 }
 
 /**Function*************************************************************
@@ -1934,16 +1947,16 @@ static inline int Vec_IntTwoRemove( Vec_Int_t * vArr1, Vec_Int_t * vArr2 )
 
 /**Function*************************************************************
 
-  Synopsis    [Returns the result of merging the two vectors.]
+  Synopsis    [Keeps only those entries in vArr1, which are in vArr2.]
 
-  Description [Keeps only those entries of vArr1, which are in vArr2.]
+  Description [Assumes that the vectors are sorted in the increasing order.]
                
   SideEffects []
 
   SeeAlso     []
 
 ***********************************************************************/
-static inline void Vec_IntTwoMerge1( Vec_Int_t * vArr1, Vec_Int_t * vArr2 )
+static inline void Vec_IntTwoFilter( Vec_Int_t * vArr1, Vec_Int_t * vArr2 )
 {
     int * pBeg  = vArr1->pArray;
     int * pBeg1 = vArr1->pArray;
